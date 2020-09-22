@@ -23,7 +23,10 @@ const onPieceClicked = (x, y) => {
 		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.RED_PIECE)
 		piece.type = 'red'
 	} else if (piece.type === 'red') {
-		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.EMPTY_PIECE)
+		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.GREEN_PIECE)
+		piece.type = 'green'
+	} else if (piece.type === 'green') {
+		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.EMPTY_PIECE, true)
 		piece.type = 'empty'
 	}
 	piece.graphic.interactive = true

@@ -3,6 +3,7 @@ import utils from './utils.js'
 
 const EMPTY_PIECE = { border: { size: 4, color: 0x666666 }, fill: { color: 0x222222 } }
 const RED_PIECE = { fill: { color: 0xFF0000 } }
+const GREEN_PIECE = { fill: { color: 0x00FF00 } }
 
 const flatHexCorner = (size, i) => {
     let angleDeg = 60 * i
@@ -21,7 +22,7 @@ const getHexPath = (size) => {
     return path
 }
 
-const getHexGraphics = (size, { border, fill }) => {
+const getHexGraphics = (size, { border, fill }, tint = false) => {
     let path = getHexPath(size)
     let hex = new Graphics()
 
@@ -36,6 +37,18 @@ const getHexGraphics = (size, { border, fill }) => {
         hex.endFill()
     }
 
+    if (tint) {
+        hex.interactive = true
+        hex.on('pointerover', (event) => {
+            hex.tint = 0x00FF00
+            hex.zIndex = 2
+        })
+        hex.on('pointerout', (event) => {
+            hex.tint = 0xffffff
+            hex.zIndex = 0
+        })
+    }
+
     return hex
 }
 
@@ -44,9 +57,9 @@ const initBoard = (w, h, size, onHexClicked) => {
     for (let i = 0; i < h; i++) {
         let hexes = []
         for (let j = 0; j < w; j++) {
-            let emptyHex = getHexGraphics(size, EMPTY_PIECE)
-            emptyHex.interactive = true
+            let emptyHex = getHexGraphics(size, EMPTY_PIECE, true)
             emptyHex.on('pointerdown', (event) => {
+                emptyHex.zIndex = 0
                 if (onHexClicked) {
                     onHexClicked(i, j)
                 }
@@ -81,5 +94,6 @@ export default {
     drawBoard,
     getHexGraphics,
     EMPTY_PIECE,
-    RED_PIECE
+    RED_PIECE,
+    GREEN_PIECE
 }
