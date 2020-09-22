@@ -1,24 +1,28 @@
 import { Graphics } from 'pixi.js'
+import utils from './utils.js'
 
-const flatHexCorner = (center, size, i) => {
+const EMPTY_PIECE = { border: { size: 4, color: 0x666666 }, fill: { color: 0x222222 } }
+const RED_PIECE = { fill: { color: 0xFF0000 } }
+
+const flatHexCorner = (size, i) => {
     let angleDeg = 60 * i
     let angleRad = Math.PI / 180 * angleDeg
     return [
-        center.x + size * Math.cos(angleRad),
-        center.y + size * Math.sin(angleRad)
+        size * Math.cos(angleRad),
+        size * Math.sin(angleRad)
     ]
 }
 
-const getHexPath = (center, size) => {
+const getHexPath = (size) => {
     let path = []
     for (let i = 0; i < 6; i++) {
-        path.push(...flatHexCorner(center, size, i))
+        path.push(...flatHexCorner(size, i))
     }
     return path
 }
 
-const getHexGraphics = (center, size, { border, fill }) => {
-    let path = getHexPath(center, size)
+const getHexGraphics = (size, { border, fill }) => {
+    let path = getHexPath(size)
     let hex = new Graphics()
 
     if (fill) {
@@ -35,94 +39,47 @@ const getHexGraphics = (center, size, { border, fill }) => {
     return hex
 }
 
-const drawGrid = (container, size, board, color, onHexClicked) => {
-    const w = 2 * size
-    const offset = w / 2
-    const h = Math.sqrt(3) * size
-    for (let i = 0; i < board.length; i++) {
-        for (let j = 0; j < board[i].length; j++) {
-            const wDist = w * (3 / 4) * j
-            const hDist = h * i + (j % 2 === 0 ? 0 : h / 2)
-            let hex = getHexGraphics({ x: offset + wDist, y: offset + hDist }, size, { border: { size: 4, color: color }, fill: { color: 0xc68f03 } })
-            hex.interactive = true
-            hex.on('pointerover', (event) => {
-                hex.tint = 0x00FF00
-                hex.zIndex = 1000
-            })
-            hex.on('pointerout', (event) => {
-                hex.tint = 0xFFFFFF
-                hex.zIndex = 0
-            })
-            hex.on('pointerdown', (event) => {
-                if (onHexClicked) {
-                    onHexClicked(i, j)
-                }
-            })
-            container.addChild(hex)
-        }
-    }
-}
-
-// TODO put graphics into board
 const initBoard = (w, h, size, onHexClicked) => {
     let board = []
-    const w = 2 * size
-    const offset = w / 2
-    const h = Math.sqrt(3) * size
     for (let i = 0; i < h; i++) {
         let hexes = []
         for (let j = 0; j < w; j++) {
-            const wDist = w * (3 / 4) * j
-            const hDist = h * i + (j % 2 === 0 ? 0 : h / 2)
-            let hex = getHexGraphics({ x: offset + wDist, y: offset + hDist }, size, { border: { size: 4, color: 0x666666 }, fill: { color: 0xc68f03 } })
-            hex.interactive = true
-            hex.on('pointerover', (event) => {
-                hex.tint = 0x00FF00
-                hex.zIndex = 1000
-            })
-            hex.on('pointerout', (event) => {
-                hex.tint = 0xFFFFFF
-                hex.zIndex = 0
-            })
-            hex.on('pointerdown', (event) => {
+            let emptyHex = getHexGraphics(size, EMPTY_PIECE)
+            emptyHex.interactive = true
+            emptyHex.on('pointerdown', (event) => {
                 if (onHexClicked) {
                     onHexClicked(i, j)
                 }
             })
-            hexes.push({ graphic: hex })
+            hexes.push({ graphic: emptyHex, type: 'empty' })
         }
         board.push(hexes)
     }
     return board
 }
 
-// TODO calculate x/y in drawBoard based on i/j
-const placePiece = (board, x, y, size, color, onHexClicked) => {
-    const w = 2 * size
-    const offset = w / 2
-    const h = Math.sqrt(3) * size
-
-    const wDist = w * (3 / 4) * x
-    const hDist = h * y + (x % 2 === 0 ? 0 : h / 2)
-    let hex = getHexGraphics({ x: offset + wDist, y: offset + hDist }, size, { fill: { color: color } })
-    boar
-}
-
-const drawBoard = (container, board) => {
+const drawBoard = (container, size, board) => {
     if (container.children.length > 0) {
         container.removeChildren(0, container.children.length - 1)
     }
+    const w = 2 * size
+    const offset = w / 2
+    const h = Math.sqrt(3) * size
     for (let i = 0; i < board.length; i++) {
         for (let j = 0; j < board[i].length; j++) {
-            if (board[i][j]) {
-                container.addChild(board[i][j].graphic)
-            }
+            const wDist = w * (3 / 4) * j
+            const hDist = h * i + (j % 2 === 0 ? 0 : h / 2)
+            board[i][j].graphic.x = offset + wDist
+            board[i][j].graphic.y = offset + hDist
+            container.addChild(board[i][j].graphic)
         }
     }
 }
 
 export default {
-    drawGrid,
     initBoard,
-    drawBoard
+    drawBoard,
+    getHexGraphics,
+    EMPTY_PIECE,
+    RED_PIECE
 }
