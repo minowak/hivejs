@@ -1,9 +1,20 @@
 import { Graphics } from 'pixi.js'
 import utils from './utils.js'
 
-const EMPTY_PIECE = { border: { size: 4, color: 0x666666 }, fill: { color: 0x222222 } }
-const RED_PIECE = { fill: { color: 0xFF0000 } }
-const GREEN_PIECE = { fill: { color: 0x00FF00 } }
+const PIECES = {
+    empty: {
+        type: 'empty',
+        style: { fill: { color: 0x222222 } }
+    },
+    red: {
+        type: 'red',
+        style: { fill: { color: 0xFF0000 } }
+    },
+    green: {
+        type: 'green',
+        style: { fill: { color: 0x00FF00 } }
+    }
+}
 
 const flatHexCorner = (size, i) => {
     let angleDeg = 60 * i
@@ -37,8 +48,9 @@ const getHexGraphics = (size, { border, fill }, tint = false) => {
         hex.endFill()
     }
 
+    hex.interactive = true
+
     if (tint) {
-        hex.interactive = true
         hex.on('pointerover', (event) => {
             hex.tint = 0x00FF00
             hex.zIndex = 2
@@ -57,7 +69,7 @@ const initBoard = (w, h, size, onHexClicked) => {
     for (let i = 0; i < h; i++) {
         let hexes = []
         for (let j = 0; j < w; j++) {
-            let emptyHex = getHexGraphics(size, EMPTY_PIECE, true)
+            let emptyHex = getHexGraphics(size, PIECES.empty.style, true)
             emptyHex.on('pointerdown', (event) => {
                 emptyHex.zIndex = 0
                 if (onHexClicked) {
@@ -68,32 +80,63 @@ const initBoard = (w, h, size, onHexClicked) => {
         }
         board.push(hexes)
     }
-    return board
+    return { size: size, grid: board, onHexClicked: onHexClicked }
 }
 
-const drawBoard = (container, size, board) => {
+const drawBoard = (container, board) => {
     if (container.children.length > 0) {
         container.removeChildren(0, container.children.length - 1)
     }
-    const w = 2 * size
+    const w = 2 * board.size
     const offset = w / 2
-    const h = Math.sqrt(3) * size
-    for (let i = 0; i < board.length; i++) {
-        for (let j = 0; j < board[i].length; j++) {
+    const h = Math.sqrt(3) * board.size
+    for (let i = 0; i < board.grid.length; i++) {
+        for (let j = 0; j < board.grid[i].length; j++) {
             const wDist = w * (3 / 4) * j
             const hDist = h * i + (j % 2 === 0 ? 0 : h / 2)
-            board[i][j].graphic.x = offset + wDist
-            board[i][j].graphic.y = offset + hDist
-            container.addChild(board[i][j].graphic)
+            board.grid[i][j].graphic.x = offset + wDist
+            board.grid[i][j].graphic.y = offset + hDist
+            container.addChild(board.grid[i][j].graphic)
         }
     }
+}
+
+const placePiece = (board, x, y, piece) => {
+    const hex = getHexGraphics(board.size, piece.style)
+    hex.on('pointerdown', (event) => {
+        if (board.onHexClicked) {
+            board.onHexClicked(x, y)
+        }
+    })
+    board.grid[x][y].type = piece.type
+    board.grid[x][y].graphic = hex
+}
+
+const movePiece = (board, x1, y1, x2, y2) => {
+    const piece = board.grid[x1][y1]
+    board.grid[x2][y2] = piece
+    board.grid[x2][y2].graphic.on('pointerdown', (event) => {
+        if (board.onHexClicked) {
+            board.onHexClicked(x2, y2)
+        }
+    })
+
+    let emptyHex = getHexGraphics(board.size, PIECES.empty.style, true)
+    emptyHex.on('pointerdown', (event) => {
+        emptyHex.zIndex = 0
+        if (board.onHexClicked) {
+            board.onHexClicked(x1, y1)
+        }
+    })
+
+    board.grid[x1][y1] = { type: 'empty', graphic: emptyHex }
 }
 
 export default {
     initBoard,
     drawBoard,
     getHexGraphics,
-    EMPTY_PIECE,
-    RED_PIECE,
-    GREEN_PIECE
+    placePiece,
+    movePiece,
+    PIECES
 }

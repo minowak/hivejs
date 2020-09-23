@@ -9,33 +9,53 @@ document.body.appendChild(app.view)
 
 const boardContainer = new Container()
 boardContainer.sortableChildren = true
-// boardContainer.interactive = true
 
-// boardContainer.on('pointerdown', (event) => {
-// 	console.log(event.data.originalEvent.layerX + ' ' + event.data.originalEvent.layerY)
-// })
+const piecesContainer = new Container()
 
 app.stage.addChild(boardContainer)
-
-const onPieceClicked = (x, y) => {
-	const piece = board[x][y]
-	if (piece.type === 'empty') {
-		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.RED_PIECE)
-		piece.type = 'red'
-	} else if (piece.type === 'red') {
-		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.GREEN_PIECE)
-		piece.type = 'green'
-	} else if (piece.type === 'green') {
-		piece.graphic = hexgrid.getHexGraphics(size, hexgrid.EMPTY_PIECE, true)
-		piece.type = 'empty'
-	}
-	piece.graphic.interactive = true
-	piece.graphic.on('pointerdown', (event) => {
-		onPieceClicked(x, y)
-	})
-	hexgrid.drawBoard(boardContainer, size, board)
-}
+app.stage.addChild(piecesContainer)
 
 const size = 50
-const board = hexgrid.initBoard(10, 8, size, onPieceClicked)
-hexgrid.drawBoard(boardContainer, size, board)
+
+let newPiece = null
+let selectedPiece = null
+
+const redPiece = hexgrid.getHexGraphics(size, hexgrid.PIECES.red.style)
+const greenPiece = hexgrid.getHexGraphics(size, hexgrid.PIECES.green.style)
+
+redPiece.on('pointerdown', (event) => {
+	newPiece = hexgrid.PIECES.red
+	selectedPiece = null
+})
+
+greenPiece.on('pointerdown', (event) => {
+	newPiece = hexgrid.PIECES.green
+	selectedPiece = null
+})
+
+redPiece.x = app.view.width / 2 - 100
+redPiece.y = app.view.height - 50
+greenPiece.x = app.view.width / 2 + 100
+greenPiece.y = app.view.height - 50
+
+piecesContainer.addChild(redPiece)
+piecesContainer.addChild(greenPiece)
+
+const onPieceClicked = (x, y) => {
+	const piece = board.grid[x][y]
+	if (piece.type === 'empty' && newPiece) {
+		hexgrid.placePiece(board, x, y, newPiece)
+	} else if (!selectedPiece && piece.type !== 'empty') {
+		console.log('selecting piece')
+		selectedPiece = { x, y }
+	} else if (selectedPiece && piece.type === 'empty') {
+		console.log('moving piece ' + selectedPiece.x + ' ' + selectedPiece.y + ' -> ' + x + ' ' + y)
+		hexgrid.movePiece(board, selectedPiece.x, selectedPiece.y, x, y)
+		selectedPiece = null
+	}
+	newPiece = null
+	hexgrid.drawBoard(boardContainer, board)
+}
+
+const board = hexgrid.initBoard(10, 7, size, onPieceClicked)
+hexgrid.drawBoard(boardContainer, board)
